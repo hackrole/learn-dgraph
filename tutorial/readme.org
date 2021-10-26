@@ -1,0 +1,135 @@
+* tutorial
+  
+** schema desing 
+
+
+   #+begin_src graphql :tangle schema.graphql
+     type Task {
+       id: ID!
+       title: String!
+       completed: Boolean!
+       user: User!
+     }
+
+     type User {
+       username: String! @id
+       name: String
+       tasks: [Task] @hasInverse(field: user)
+     }
+   #+end_src
+
+  
+** run dgraph standalone 
+
+   #+begin_src bash
+     docker run -it -p 8080:8080 dgraph/standalone:master
+   #+end_src
+
+   
+** post the schema to dgraph 
+
+   #+begin_src bash
+     curl -X POST localhost:8080/admin/schema --data-binary '@schema.graphql'
+   #+end_src
+
+   #+RESULTS:
+   | data":{"code":"Success | Done |
+
+
+** TODO query and mutation example
+
+
+  
+** renew the schema define 
+
+   #+begin_src graphql :tangle schema2.graphql
+     type Task {
+       id: ID!
+       title: String!
+       completed: Boolean! @search
+       user: User!
+     }
+
+     type User {
+       username: String! @id
+       name: String
+       tasks: [Task] @hasInverse(field: user)
+     }
+   #+end_src
+
+  
+** resubmit the schema define
+
+   #+begin_src bash
+     curl -X POST localhost:8080/admin/schema --data-binary '@schema2.graphql'
+   #+end_src
+
+   #+RESULTS:
+   | data":{"code":"Success | Done |
+
+  
+** TODO query and mutation example 
+
+  
+** support search on title 
+
+   #+begin_src graphql :tangle schema3.graphql
+     type Task {
+       id: ID!
+       title: String! @search(by: [fulltext])
+       completed: Boolean! @search
+       user: User!
+     }
+
+     type User {
+       username: String! @id
+       name: String
+       tasks: [Task] @hasInverse(field: user)
+     }
+   #+end_src
+
+** resubmit the schema define
+
+   #+begin_src bash
+     curl -X POST localhost:8080/admin/schema --data-binary '@schema3.graphql'
+   #+end_src
+
+   #+RESULTS:
+   | data":{"code":"Success | Done |
+
+  
+** TODO query and mutation example 
+
+  
+** auth rules 
+
+   #+begin_src graphql :tangle schema4.graphql
+     type Task @auth(query: {rule: """
+         query($USER: String!){
+           queryTask {
+             user(filter: {username: {eq: $USER}}) {
+               __typename
+             }
+           }
+         }"""}) {
+       id: ID!
+       title: String! @search(by: [fulltext])
+       completed: Boolean! @search
+       user: User!
+     }
+
+     type User {
+       username: String! @id
+       name: String
+       tasks: [Task] @hasInverse(field: user)
+     }
+   #+end_src
+
+   #+begin_src bash
+     curl -X POST localhost:8080/admin/schema --data-binary '@schema4.graphql'
+
+   #+end_src
+
+   #+RESULTS:
+   | data":{"code":"Success | Done |
+   
